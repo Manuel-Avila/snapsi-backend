@@ -11,6 +11,7 @@ const statements = [
         password VARCHAR(255) NOT NULL,
         bio TEXT,
         profile_picture_url VARCHAR(255),
+        image_cloudinary_id VARCHAR(255),
         gender ENUM('male', 'female', 'other'),
         age TINYINT UNSIGNED,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -20,6 +21,7 @@ const statements = [
         id INT AUTO_INCREMENT PRIMARY KEY,
         user_id INT NOT NULL,
         image_url TEXT NOT NULL,
+        image_cloudinary_id VARCHAR(255),
         caption TEXT,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
@@ -78,25 +80,21 @@ const statements = [
 ];
 
 (async () => {
-  const connection = await db.getConnection();
+  console.log("🚧 Starting database migration...");
+  let connection;
 
   try {
-    console.log("🚧 Starting database migration...");
-
-    await connection.beginTransaction();
+    connection = await db.getConnection();
 
     for (const statement of statements) {
       await connection.query(statement);
     }
 
-    await connection.commit();
-
     console.log("✅ Database migration completed successfully.");
   } catch (err) {
     console.error("❌ Database migration failed:", err);
-    await connection.rollback();
   } finally {
-    connection.release();
+    if (connection) connection.release();
     process.exit();
   }
 })();
