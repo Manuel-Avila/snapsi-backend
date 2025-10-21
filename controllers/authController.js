@@ -3,12 +3,13 @@ import jwt from "jsonwebtoken";
 import * as UserModel from "../models/userModel.js";
 
 export const register = async (req, res) => {
-  const { username, email, password, gender, age } = req.body;
+  const { name, username, email, password, gender, age } = req.body;
   try {
     const salt = await bcrypt.genSalt(10);
     const passwordHash = await bcrypt.hash(password, salt);
 
     const newUserId = await UserModel.createUser({
+      name,
       username,
       email,
       password: passwordHash,
@@ -37,9 +38,7 @@ export const login = async (req, res) => {
   try {
     const user = await UserModel.getUserForAuth(email);
     if (!user) {
-      return res
-        .status(401)
-        .json({ message: "There are no users associated with this email." });
+      return res.status(401).json({ message: "Invalid credentials." });
     }
 
     const isMatch = await bcrypt.compare(password, user.password);

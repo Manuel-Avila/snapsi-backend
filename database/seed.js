@@ -11,9 +11,10 @@ const statements = [];
     const passwordHash = await bcrypt.hash("secret", 10);
     statements.push({
       query:
-        "INSERT INTO users (username, email, password, gender, age, bio) VALUES (?, ?, ?, ?, ?, ?)",
+        "INSERT INTO users (name, username, email, password, gender, age, bio) VALUES (?, ?, ?, ?, ?, ?, ?)",
       values: [
         "Manuel Avila",
+        "manuel_avilam",
         "manuelavila@gmail.com",
         passwordHash,
         "male",

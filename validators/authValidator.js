@@ -1,11 +1,24 @@
 import Joi from "joi";
 
 export const registerSchema = Joi.object({
-  username: Joi.string().min(5).max(50).required().messages({
-    "string.base": `"username" must be a string`,
-    "string.min": `"username" must have at least {#limit} characters`,
-    "string.max": `"username" cannot have more than {#limit} characters`,
-    "any.required": `"username" is required`,
+  username: Joi.string()
+    .min(5)
+    .max(50)
+    .regex(/^[a-zA-Z0-9.-]*$/)
+    .required()
+    .messages({
+      "string.base": `"username" must be a string`,
+      "string.min": `"username" must have at least {#limit} characters`,
+      "string.max": `"username" cannot have more than {#limit} characters`,
+      "string.pattern.base": `"username" can only contain letters, numbers, hyphens (-), and periods (.)`,
+      "any.required": `"username" is required`,
+    }),
+
+  name: Joi.string().min(3).max(255).required().messages({
+    "string.base": `"name" must be a string`,
+    "string.min": `"name" must have at least {#limit} characters`,
+    "string.max": `"name" cannot have more than {#limit} characters`,
+    "any.required": `"name" is required`,
   }),
 
   email: Joi.string().email().max(255).required().messages({
