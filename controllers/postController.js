@@ -1,6 +1,7 @@
 import { uploadFromBuffer, deleteFile } from "../utils/cloudinaryUtils.js";
 import * as PostModel from "../models/postModel.js";
 import * as CommentModel from "../models/commentModel.js";
+import * as NotificationModel from "../models/notificationModel.js";
 
 export const getPosts = async (req, res) => {
   const { limit, cursor } = req.query;
@@ -41,6 +42,46 @@ export const getUserPosts = async (req, res) => {
   } catch (error) {
     console.error("Error fetching posts:", error);
     res.status(500).json({ message: "Error fetching posts" });
+  }
+};
+
+export const getBookmarkedPosts = async (req, res) => {
+  const { limit, cursor } = req.query;
+  const { id: userId } = req.user;
+  const formattedLimit = parseInt(limit, 10);
+
+  try {
+    const posts = await PostModel.getBookmarkedPosts(
+      formattedLimit,
+      cursor,
+      userId
+    );
+
+    const nextCursor =
+      posts.length === formattedLimit ? posts[posts.length - 1].id : null;
+
+    res.status(200).json({ posts, nextCursor });
+  } catch (error) {
+    console.error("Error fetching bookmarked posts:", error);
+    res.status(500).json({ message: "Error fetching bookmarked posts" });
+  }
+};
+
+export const getPostById = async (req, res) => {
+  const { postId } = req.params;
+  const { id: userId } = req.user;
+
+  try {
+    const post = await PostModel.getPostById(postId, userId);
+
+    if (!post) {
+      return res.status(404).json({ message: "Post not found" });
+    }
+
+    res.status(200).json({ post });
+  } catch (error) {
+    console.error("Error fetching post:", error);
+    res.status(500).json({ message: "Error fetching post" });
   }
 };
 
@@ -93,18 +134,60 @@ export const createPost = async (req, res) => {
   }
 };
 
+export const deletePost = async (req, res) => {
+  const { postId } = req.params;
+  const { id: userId } = req.user;
+
+  try {
+    const post = await PostModel.getPostById(postId, userId);
+
+    if (!post) {
+      return res.status(404).json({ message: "Post not found." });
+    }
+
+    if (post.user.id !== userId) {
+      return res
+        .status(403)
+        .json({ message: "Unauthorized to delete this post." });
+    }
+
+    await deleteFile(post.image_cloudinary_id);
+    await PostModel.deletePost(postId, userId);
+
+    res.status(200).json({ message: "Post deleted successfully." });
+  } catch (error) {
+    console.error("Error deleting post:", error);
+    res.status(500).json({ message: "Error deleting post." });
+  }
+};
+
 export const likePost = async (req, res) => {
   const { postId } = req.params;
   const { id: userId } = req.user;
 
   try {
+    const post = await PostModel.getPostById(postId, userId);
+    if (!post) {
+      return res.status(404).json({ message: "Post not found." });
+    }
+
+    const recipient_user_id = post.user.id;
+
     const result = await PostModel.addLike(postId, userId);
+
+    if (recipient_user_id !== userId) {
+      await NotificationModel.createNotification({
+        type: "like",
+        sender_user_id: userId,
+        recipient_user_id,
+        post_id: postId,
+      });
+    }
+
     res.status(201).json({ message: "Post liked successfully" });
   } catch (error) {
     if (error.code === "ER_DUP_ENTRY") {
       return res.status(200).json({ message: "The post is already liked." });
-    } else if (error.code === "ER_NO_REFERENCED_ROW_2") {
-      return res.status(404).json({ message: "Post not found." });
     }
     console.error("Error liking post:", error);
     res.status(500).json({ message: "Error liking post" });
@@ -195,6 +278,12 @@ export const addComment = async (req, res) => {
   const { id: userId } = req.user;
 
   try {
+    const post = await PostModel.getPostById(postId, userId);
+    if (!post) {
+      return res.status(404).json({ message: "Post not found." });
+    }
+    const recipient_user_id = post.user.id;
+
     const comment = {
       user_id: userId,
       post_id: postId,
@@ -208,14 +297,20 @@ export const addComment = async (req, res) => {
       throw new Error("Failed to retrieve the newly created comment.");
     }
 
+    if (recipient_user_id !== userId) {
+      await NotificationModel.createNotification({
+        type: "comment",
+        sender_user_id: userId,
+        recipient_user_id,
+        post_id: postId,
+      });
+    }
+
     res.status(201).json({
       message: "Comment added successfully",
       comment: newComment,
     });
   } catch (error) {
-    if (error.code === "ER_NO_REFERENCED_ROW_2") {
-      return res.status(404).json({ message: "Post not found." });
-    }
     console.error("Error adding comment:", error);
     res.status(500).json({ message: "Error adding comment" });
   }

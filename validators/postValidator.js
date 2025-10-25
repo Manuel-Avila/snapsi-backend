@@ -11,15 +11,6 @@ export const getPostsSchema = Joi.object({
   cursor: Joi.string().allow("").optional(),
 }).unknown(true);
 
-export const getUserPostsSchema = Joi.object({
-  username: Joi.string().min(5).max(50).required().messages({
-    "string.base": `"username" must be a string`,
-    "string.min": `"username" must have at least {#limit} characters`,
-    "string.max": `"username" cannot have more than {#limit} characters`,
-    "any.required": `"username" is required`,
-  }),
-});
-
 export const postIdParamSchema = Joi.object({
   postId: Joi.number().integer().positive().required().messages({
     "number.base": `"postId" must be a number`,

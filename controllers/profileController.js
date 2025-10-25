@@ -1,12 +1,11 @@
 import * as UserModel from "../models/userModel.js";
-import jwt from "jsonwebtoken";
 import { deleteFile, uploadFromBuffer } from "../utils/cloudinaryUtils.js";
 
 export const getProfile = async (req, res) => {
-  const { username } = req.user;
+  const { username, id } = req.user;
 
   try {
-    const user = await UserModel.getProfileByUsername(username);
+    const user = await UserModel.getProfileByUsername(username, id);
 
     if (!user) {
       return res.status(404).json({ message: "User not found" });

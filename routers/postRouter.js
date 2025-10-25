@@ -6,9 +6,9 @@ import validate from "../middlewares/validateReq.js";
 import {
   createPostSchema,
   getPostsSchema,
-  getUserPostsSchema,
   postIdParamSchema,
 } from "../validators/postValidator.js";
+import { usernameParamSchema } from "../validators/userValidator.js";
 import {
   createCommentSchema,
   getCommentsSchema,
@@ -24,11 +24,29 @@ router.get(
   PostController.getPosts
 );
 router.get(
+  "/bookmarks",
+  validate(getPostsSchema, "query"),
+  verifyToken,
+  PostController.getBookmarkedPosts
+);
+router.get(
   "/user/:username",
-  validate(getUserPostsSchema, "params"),
+  validate(usernameParamSchema, "params"),
   validate(getPostsSchema, "query"),
   verifyToken,
   PostController.getUserPosts
+);
+router.get(
+  "/:postId",
+  validate(postIdParamSchema, "params"),
+  verifyToken,
+  PostController.getPostById
+);
+router.delete(
+  "/:postId",
+  validate(postIdParamSchema, "params"),
+  verifyToken,
+  PostController.deletePost
 );
 router.post(
   "/",

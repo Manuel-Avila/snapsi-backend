@@ -64,20 +64,48 @@ export const updateUser = async (id, data) => {
   return result.affectedRows > 0;
 };
 
-export const getProfileByUsername = async (username) => {
+export const getProfileByUsername = async (username, currentUserId) => {
   const [rows] = await db.query(
     `SELECT
       u.id, u.name, u.username, u.bio, u.profile_picture_url, u.gender, u.age,
       (SELECT COUNT(*) FROM posts WHERE user_id = u.id) AS post_count,
       (SELECT COUNT(*) FROM followers WHERE following_id = u.id) AS follower_count,
-      (SELECT COUNT(*) FROM followers WHERE follower_id = u.id) AS following_count
+      (SELECT COUNT(*) FROM followers WHERE follower_id = u.id) AS following_count,
+      EXISTS(SELECT 1 FROM followers WHERE follower_id = ? AND following_id = u.id) AS is_followed
     FROM
       users u
     WHERE
       u.username = ?;
   `,
-    [username]
+    [currentUserId, username]
   );
 
-  return rows[0];
+  if (rows.length === 0) {
+    return null;
+  }
+
+  const post = {
+    ...rows[0],
+    is_followed: !!rows[0].is_followed,
+  };
+
+  return post;
+};
+
+export const addFollow = async (followingId, followerId) => {
+  const [result] = await db.query(
+    "INSERT INTO followers (follower_id, following_id) VALUES (?, ?)",
+    [followerId, followingId]
+  );
+
+  return result.affectedRows > 0;
+};
+
+export const removeFollow = async (unfollowedId, followerId) => {
+  const [result] = await db.query(
+    "DELETE FROM followers WHERE follower_id = ? AND following_id = ?",
+    [followerId, unfollowedId]
+  );
+
+  return result.affectedRows > 0;
 };
