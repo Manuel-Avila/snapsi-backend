@@ -2,69 +2,34 @@ import { uploadFromBuffer, deleteFile } from "../utils/cloudinaryUtils.js";
 import * as PostModel from "../models/postModel.js";
 import * as CommentModel from "../models/commentModel.js";
 import * as NotificationModel from "../models/notificationModel.js";
+import { handlePaginatedRequest } from "../utils/handlePaginatedRequest.js";
 
 export const getPosts = async (req, res) => {
-  const { limit, cursor } = req.query;
   const { id: userId } = req.user;
-  const formattedLimit = parseInt(limit, 10);
 
-  try {
-    const posts = await PostModel.getPosts(formattedLimit, cursor, userId);
+  const modelCall = (limit, cursor) =>
+    PostModel.getPosts(limit, cursor, userId);
 
-    const nextCursor =
-      posts.length === formattedLimit ? posts[posts.length - 1].id : null;
-
-    res.status(200).json({ posts, nextCursor });
-  } catch (error) {
-    console.error("Error fetching posts:", error);
-    res.status(500).json({ message: "Error fetching posts" });
-  }
+  await handlePaginatedRequest(req, res, "posts", modelCall);
 };
 
 export const getUserPosts = async (req, res) => {
-  const { limit, cursor } = req.query;
-  const { username } = req.params;
   const { id: userId } = req.user;
-  const formattedLimit = parseInt(limit, 10);
+  const { username } = req.params;
 
-  try {
-    const posts = await PostModel.getPostsByUsername(
-      formattedLimit,
-      cursor,
-      userId,
-      username
-    );
+  const modelCall = (limit, cursor) =>
+    PostModel.getPostsByUsername(limit, cursor, userId, username);
 
-    const nextCursor =
-      posts.length === formattedLimit ? posts[posts.length - 1].id : null;
-
-    res.status(200).json({ posts, nextCursor });
-  } catch (error) {
-    console.error("Error fetching posts:", error);
-    res.status(500).json({ message: "Error fetching posts" });
-  }
+  await handlePaginatedRequest(req, res, "posts", modelCall);
 };
 
 export const getBookmarkedPosts = async (req, res) => {
-  const { limit, cursor } = req.query;
   const { id: userId } = req.user;
-  const formattedLimit = parseInt(limit, 10);
 
-  try {
-    const posts = await PostModel.getBookmarkedPosts(
-      formattedLimit,
-      cursor,
-      userId
-    );
+  const modelCall = (limit, cursor) =>
+    PostModel.getBookmarkedPosts(limit, cursor, userId);
 
-    const nextCursor =
-      posts.length === formattedLimit ? posts[posts.length - 1].id : null;
-
-    res.status(200).json({ posts, nextCursor });
-  } catch (error) {
-    console.error("Error fetching bookmarked posts:", error);
-    res.status(500).json({ message: "Error fetching bookmarked posts" });
-  }
+  await handlePaginatedRequest(req, res, "posts", modelCall);
 };
 
 export const getPostById = async (req, res) => {
@@ -252,24 +217,11 @@ export const unbookmarkPost = async (req, res) => {
 
 export const getComments = async (req, res) => {
   const { postId } = req.params;
-  const { limit, cursor } = req.query;
-  const formattedLimit = parseInt(limit, 10);
 
-  try {
-    const comments = await CommentModel.getCommentsByPostId(
-      formattedLimit,
-      cursor,
-      postId
-    );
-    const nextCursor =
-      comments.length === formattedLimit
-        ? comments[comments.length - 1].id
-        : null;
-    res.status(200).json({ comments, nextCursor });
-  } catch (error) {
-    console.error("Error fetching comments:", error);
-    res.status(500).json({ message: "Error fetching comments" });
-  }
+  const modelCall = (limit, cursor) =>
+    CommentModel.getCommentsByPostId(limit, cursor, postId);
+
+  await handlePaginatedRequest(req, res, "comments", modelCall);
 };
 
 export const addComment = async (req, res) => {
